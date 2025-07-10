@@ -15,6 +15,10 @@ import os
 # Download model from external link
 import requests
 
+# To download csv files
+import io
+import pandas as pd
+
 st.set_page_config(page_title="Nematode Detector", layout="centered")
 st.title("Nematode Detector with YOLOv8")
 st.sidebar.header("Detection Settings")
@@ -253,6 +257,7 @@ def push_to_csv(classification_data, species_list):
 
             rows.append(row)
 
+        
         return pd.DataFrame(rows)
 
     # === New CSV File ===
@@ -263,6 +268,7 @@ def push_to_csv(classification_data, species_list):
             # Reorder columns: filename, ID, species...
             df = df[["filename", "ID"] + species_list]
             df.to_csv(new_name, index=False)
+            st.rerun()
             st.success(f"Saved classification results to `{new_name}`.")
             st.session_state.csv_push_mode = None
 
@@ -279,6 +285,7 @@ def push_to_csv(classification_data, species_list):
                     old_df = pd.read_csv(existing_name)
                     combined_df = pd.concat([old_df, new_df], ignore_index=True)
                     combined_df.to_csv(existing_name, index=False)
+                    st.rerun()
                     st.success(f"Appended classification results to `{existing_name}`.")
                 except Exception as e:
                     st.error(f"⚠️ Error reading CSV: {e}")
@@ -326,6 +333,7 @@ def push_multiple_images_to_csv(classification_data, species_list):
             df = convert_to_csv_df(classification_data)
             df = df[["filename", "ID"] + species_list]
             df.to_csv(new_name, index=False)
+            st.rerun()
             st.success(f"Saved classification results to `{new_name}`.")
             st.session_state.csv_push_mode_multi = None
 
@@ -342,6 +350,7 @@ def push_multiple_images_to_csv(classification_data, species_list):
                     old_df = pd.read_csv(existing_name)
                     combined_df = pd.concat([old_df, new_df], ignore_index=True)
                     combined_df.to_csv(existing_name, index=False)
+                    st.rerun()
                     st.success(f"Appended classification results to `{existing_name}`.")
                 except Exception as e:
                     st.error(f"⚠️ Error reading CSV: {e}")
@@ -358,7 +367,7 @@ def push_video_to_csv(classification_data, species_list, widget_suffix=None):
     if not widget_suffix:
         widget_suffix = str(uuid.uuid4())  # unique ID per call
 
-    st.markdown("### 🗃️ Push Video Classifications to CSV Database")
+    st.markdown("### Push Video Classifications to CSV Database")
 
     key_prefix = f"video_csv_{widget_suffix}"
     if f"{key_prefix}_mode" not in st.session_state:
@@ -395,6 +404,7 @@ def push_video_to_csv(classification_data, species_list, widget_suffix=None):
             try:
                 df = df[["filename", "ID"] + species_list]
                 df.to_csv(new_name, index=False)
+                st.rerun()
                 st.success(f"Saved video classification results to `{new_name}`.")
                 st.session_state[f"{key_prefix}_mode"] = None
             except Exception as e:
@@ -402,7 +412,7 @@ def push_video_to_csv(classification_data, species_list, widget_suffix=None):
 
     elif mode == "append":
         existing_name = st.text_input("Enter existing CSV file name", key=f"{key_prefix}_append_input")
-        if existing_name and st.button("📎 Append to Existing CSV", key=f"{key_prefix}_append_btn"):
+        if existing_name and st.button("Append to Existing CSV", key=f"{key_prefix}_append_btn"):
             new_df = convert_video_classification_to_df(classification_data, species_list)
             try:
                 new_df = new_df[["filename", "ID"] + species_list]
@@ -410,6 +420,7 @@ def push_video_to_csv(classification_data, species_list, widget_suffix=None):
                     old_df = pd.read_csv(existing_name)
                     combined_df = pd.concat([old_df, new_df], ignore_index=True)
                     combined_df.to_csv(existing_name, index=False)
+                    st.rerun()
                     st.success(f"Appended video classification results to `{existing_name}`.")
                 else:
                     st.warning(f"File `{existing_name}` not found.")
@@ -442,6 +453,47 @@ class VideoTransformer(VideoTransformerBase):
 
         annotated = results.plot()
         return annotated
+
+
+
+
+
+
+
+
+
+with st.sidebar:
+    st.markdown("### Download Existing CSVs")
+
+    csv_files = [f for f in os.listdir() if f.endswith(".csv")]
+    
+    if not csv_files:
+        st.info("No CSV files found in directory.")
+    else:
+        for csv_file in csv_files:
+            try:
+                df = pd.read_csv(csv_file)
+                csv_buffer = io.StringIO()
+                df.to_csv(csv_buffer, index=False)
+                st.download_button(
+                    label=f"{csv_file}",
+                    data=csv_buffer.getvalue(),
+                    file_name=csv_file,
+                    mime="text/csv",
+                    key=f"download_{csv_file}"
+                )
+            except Exception as e:
+                st.warning(f"⚠️ Could not load {csv_file}: {e}")
+
+
+
+
+
+
+
+
+
+
 
 #________________________________________________________________________________________________________________________________________
 option = st.radio("Select Input Type", ["Image", "Multiple Images", "Video", "Live Camera"])
