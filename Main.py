@@ -12,19 +12,8 @@ import tempfile
 import pandas as pd
 import os
 
-
-
-
-
-model = YOLO("models/last.pt")
-classifier = YOLO("models/cweights.pt")
-#print(classifier.task)
-
-if "video_tracking_data" not in st.session_state:
-    st.session_state.video_tracking_data = []
-
-
-
+# Download model from external link
+import requests
 
 st.set_page_config(page_title="Nematode Detector", layout="centered")
 st.title("Nematode Detector with YOLOv8")
@@ -35,6 +24,54 @@ selected_classes = [
     if st.sidebar.checkbox(label, value=(class_id == 0))
 ]
 confidence_thresh = st.sidebar.slider("Confidence Threshold", 0.0, 1.0, 0.5, 0.05)
+
+
+MODEL_URL = "https://huggingface.co/dman3/classifier/resolve/main/cweights.pt"
+MODEL_PATH = "models/model.pt"
+
+def download_model():
+    os.makedirs("models", exist_ok=True)
+    if not os.path.exists(MODEL_PATH):
+        with st.spinner("Downloading model weights..."):
+            r = requests.get(MODEL_URL, stream=True)
+            with open(MODEL_PATH, "wb") as f:
+                for chunk in r.iter_content(chunk_size=8192):
+                    if chunk:
+                        f.write(chunk)
+        st.success("Model downloaded successfully!")
+# Before loading model
+download_model()
+# Then load your model like this
+classifier = YOLO(MODEL_PATH)
+
+MODEL_URL2 = "https://huggingface.co/dman3/detector/resolve/main/last.pt"
+MODEL_PATH2 = "models/model2.pt"
+
+def download_model():
+    os.makedirs("models", exist_ok=True)
+    if not os.path.exists(MODEL_PATH2):
+        with st.spinner("Downloading model weights..."):
+            r = requests.get(MODEL_URL2, stream=True)
+            with open(MODEL_PATH2, "wb") as f:
+                for chunk in r.iter_content(chunk_size=8192):
+                    if chunk:
+                        f.write(chunk)
+        st.success("Model downloaded successfully!")
+# Before loading model
+download_model()
+# Then load your model like this
+model = YOLO(MODEL_PATH2)
+
+
+
+
+#model = YOLO("models/last.pt")
+#classifier = YOLO("models/cweights.pt")
+#print(classifier.task)
+
+if "video_tracking_data" not in st.session_state:
+    st.session_state.video_tracking_data = []
+
 
 
 
