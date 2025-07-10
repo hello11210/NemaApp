@@ -17,7 +17,6 @@ import requests
 
 # To download csv files
 import io
-import pandas as pd
 
 st.set_page_config(page_title="Nematode Detector", layout="centered")
 st.title("Nematode Detector with YOLOv8")
